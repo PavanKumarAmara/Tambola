@@ -1,0 +1,264 @@
+<!doctype html>
+<html style="background: #f3ffff;margin-left: 25px;">
+	<head>
+		<title>FunZone</title>
+		<script src = "https://ajax.googleapis.com/ajax/libs/angularjs/1.5.2/angular.min.js"></script>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+		<base href="/">
+		<style>
+			p {margin: 4px;}
+			.table_border {
+				border: 1px solid black;
+				border-collapse: collapse;
+			}
+			.table_border tr td{
+			  border: 1px solid black;
+			  border-collapse: collapse;
+			  padding : 10px;
+			  text-align : center;
+			}
+			.mark{
+				border-top-right-radius: 50px;
+   				border-bottom-left-radius: 50px;
+				background: #6cffa6;
+			}
+		</style>	
+	</head>
+	<body ng-app>
+		<p style="font-size: 24px;font-family: monospace;margin-bottom: 30px;">Welcome to the fun zone <b style="font-size: 32px;font-family: cursive;"><span ng-bind ="name"> </span></b></p>
+		<table id='input_email' style="margin-bottom: 20px;font-size: 18px;font-family: monospace;">
+			<tr>
+				<td><p>Provide email to continue</p>
+				<td><input type = 'text' ng-model = "name" id = "email"></td>
+				<td><button id = "save">save</button></td>
+			</tr>
+		</table>
+		<div id="ticketSection" style="display:none">
+			<p id = "activeTicketText" style="font-size: 18px;font-family: monospace;padding-left: 10px;">You have an Active Tambola ticket and it is as shown below</p>
+			<p style="font-size: 18px;font-family: monospace;padding-left: 10px;">Game Begins at : <span style="font-family: cursive;">09-MAY-2022</span></p>	
+			<div id= ticketValues style="margin-left: 30px;margin-bottom: 30px;margin-top: 30px;">
+				
+			</div>
+			<div id='submitWinnings' style="font-size: 18px;font-family: monospace; display:none">	
+				<table>
+					<tr>Submit Winnings</tr>
+					<tr>
+						<td><button id = "f&l">First & Last</button></td>
+						<td><button id = "q5">Quick 5</button></td>
+						<td><button id = "ql1">Quick Line 1</button></td>
+						<td><button id = "ql2">Quick Line 2</button></td>
+						<td><button id = "ql3">Quick Line 3</button></td>
+						<td><button id = "tambola">Tambola</button></td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div id="newTicketGenerateSection" style="display:none">
+			<div>
+				<table id="generateTicketRow">
+					<tr>
+						<td>
+							<p>Currently you don't have any active or generated Tambola ticket. Use generate ticket button for generating one ticket</p>	
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<button id = "generateTicket">Generate Ticket</button>
+						</td>
+					</tr>
+				</table>
+				<table>
+					<tr id="confirmTicketRow" style="display:none">
+						<td>
+							<button id = "confirmTicket">Confirm Ticket Generated</button>
+						</td>
+						<td>
+							<button id = "regenerateTicket">Regenerate Ticket</button>
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div style="font-size: 18px;font-family: monospace;">
+			<table class='table_border'>
+				<tr><td><b><p>***Game Rules*** </p></b></td></tr>
+				<tr><td><p>1. You can generate ticket using generateTicket button and confirm your ticket for the game once you are satisfied with the numbers on your ticket</p></td></tr>
+				<tr><td><p>2. Game begins on the specified time on the Screen with the tag. Game Starts On</p></td></tr>
+				<tr><td><p>3. Once the game is started, random numbers from 1-90 will be picked every 15mins</p></td></tr>
+				<tr><td><p>4. If the generated Number is present in your ticket, it will be auto marked.</p></td></tr>
+				<tr><td><p>5. Players need to check the tickets and the markings with then generated numbers</p></td></tr>
+				<tr><td><p>6. Player need to submit for the ticket for below rules under submit winnings tab</p></td></tr>
+				<tr><td><p><ul>
+					<li>First & Last (If Minimum and Maximum in your ticket are marked)</li>
+					<li>Quick 5 (If atleast 5 numbers are marked in your ticket)</li>
+					<li>Quick line 1 (If all numbers in 1st line are marked)</li>
+					<li>Quick line 2 (If all numbers in 2nd line are marked)</li>
+					<li>Quick line 3 (If all numbers in 3rd line are marked)</li>
+					<li>Tambola (If whole numbers in the line are marked)</li>
+				</ul></p></td></tr>
+			</table>
+		</div>
+		<script type="text/javascript">
+			$("#save").click(function(){
+				console.log("Welcome, " + $("#email").val() );
+				$("#input_email").hide();
+				loadInitData();
+			})
+			ticketId = 0;
+			ticketValues = null;
+			generatedNumbers = null;
+			tr = null;
+			function loadInitData(){
+				bindSetInterval();
+				$.ajax({
+					url: "http://localhost:8080/getactiveticket/"+$("#email").val()
+				}).done(function(data){
+					console.log(data);
+					ticketId = data.number;
+					loadTicketValues();
+				}).fail(function(){
+					console.log(data);
+				});
+				
+				function loadTicketValues(){
+					if(ticketId != 0 && ticketId != undefined){
+						$.ajax({
+							url: "http://localhost:8080/getticketvalues/"+ticketId
+						}).done(function(data){
+							console.log(data);
+							tr = data;
+							if(data.ticketValues != null){
+								ticketValues = data.ticketValues;
+								$("#ticketSection").show();
+								$("#ticketValues").html(getTicketValuesTemplate());
+								$("#newTicketGenerateSection").hide();
+							}else{
+								$("#ticketSection").hide();
+								$("#newTicketGenerateSection").show();
+								$("#ticketValues").html("");
+							}
+						}).fail(function(){
+							console.log('failure');
+							$("#ticketSection").hide();
+							$("#newTicketGenerateSection").show();
+							$("#ticketValues").html("");
+						});
+					}else{
+						$("#ticketSection").hide();
+						$("#newTicketGenerateSection").show();
+						$("#ticketValues").html("");
+					}
+				}
+			}
+			
+			function getTicketValuesTemplate(){
+				html = "<table id='tambola_ticket' class='table_border' style='box-shadow: 10px 10px #dbdeff;'>"
+				    +"<tr><td>"+ticketValues[0][0]+"</td><td></td><td>"+ticketValues[0][1]+"</td><td></td><td>"+ticketValues[0][2]+"</td><td></td><td>"+ticketValues[0][3]+"</td><td></td><td>"+ticketValues[0][4]+"</td><td></td></tr>"
+					+"<tr><td></td><td>"+ticketValues[1][0]+"</td><td></td><td>"+ticketValues[1][1]+"</td><td></td><td>"+ticketValues[1][2]+"</td><td></td><td>"+ticketValues[1][3]+"</td><td></td><td>"+ticketValues[1][4]+"</td></tr>"
+					+"<tr><td>"+ticketValues[2][0]+"</td><td></td><td>"+ticketValues[2][1]+"</td><td></td><td>"+ticketValues[2][2]+"</td><td></td><td>"+ticketValues[2][3]+"</td><td></td><td>"+ticketValues[2][4]+"</td><td></td></tr>"
+					+"</table>";
+					console.log(html);
+					return html;
+			}
+			$("#generateTicket").click(function(){
+				$.ajax({
+					url: "http://localhost:8080/generateTicket/"+$("#email").val()
+				}).done(function(data){
+					console.log(data);
+					tr = data;
+					ticketValues = data.ticketValues;
+					$("#ticketSection").show();
+					$("#generateTicketRow").hide();
+					$("#confirmTicketRow").show();
+					$("#activeTicketText").hide();
+					$("#ticketValues").html("<p>Generated Ticket Values are as below. Kindly confirm ticket if values are fine else regenerate</p>"+getTicketValuesTemplate());
+					$("#newTicketGenerateSection").show();
+					
+				}).fail(function(data){
+					console.log(data)
+				});
+			});
+			$("#regenerateTicket").click(function(){
+			$.ajax({
+				url: "http://localhost:8080/generateTicket/"+$("#email").val()
+			}).done(function(data){
+					console.log(data);
+					tr = data;
+					ticketValues = data.ticketValues;
+					$("#ticketSection").show();
+					$("#generateTicketRow").hide();
+					$("#confirmTicketRow").show();
+					$("#activeTicketText").hide();
+					$("#ticketValues").html("<p>Generated Ticket Values are as below. Kindly confirm ticket if values are fine else regenerate</p>"+getTicketValuesTemplate());
+					$("#newTicketGenerateSection").show();
+				}).fail(function(data){
+					console.log(data);
+					})});
+			
+			$("#confirmTicket").click(function(){
+				console.log(JSON.stringify(tr));
+				$.ajax({
+					url: "http://localhost:8080/confirmTicket/"+$("#email").val(),
+					data: JSON.stringify(tr),
+					contentType : 'application/json',
+					type: 'POST'
+				}).done(function(data){
+					console.log(data);
+					$("#confirmTicketRow").hide();
+					$("#activeTicketText").show();
+					$("#ticketValues").html(getTicketValuesTemplate());
+				}).fail(function(data){
+					console.log(data);
+				});
+			});
+			
+			function bindSetInterval(){
+				setTimeout(set(),2000);
+				setInterval(set,1000*60);
+				function set(){
+					console.log('set called');
+					$.ajax({
+						url: "http://localhost:8080/getgeneratednumbers"
+					}).done(function(data){
+						console.log(data);
+						generatedNumbers = data;
+						refreshTicketValues();
+					}).fail(function(data){
+						console.log(data);
+					});
+				}
+			}
+			
+			function refreshTicketValues(){
+				if(generatedNumbers != null){
+					$("#tambola_ticket tr").each(function(index,tr){
+						$("#tambola_ticket tr").each(function(index,tr){
+							markElement($(this).find("td:eq(0)"));
+							markElement($(this).find("td:eq(1)"));
+							markElement($(this).find("td:eq(2)"));
+							markElement($(this).find("td:eq(3)"));
+							markElement($(this).find("td:eq(4)"));
+							markElement($(this).find("td:eq(5)"));
+							markElement($(this).find("td:eq(6)"));
+							markElement($(this).find("td:eq(7)"));
+							markElement($(this).find("td:eq(8)"));
+							markElement($(this).find("td:eq(9)"));
+						});
+					});
+				}
+				
+				function markElement(element){
+					num = element.text().trim();
+					if(num){
+						for (number in generatedNumbers){
+						    if(generatedNumbers[number].number==num){
+						    	element.addClass("mark");
+						    }
+						}
+					}
+				}
+			}
+			
+		</script>
+	</body>
+</html>
